@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["A5EKHJ2X2S.vahidgr.movieroulette"],
+        "components": [
+          {
+            "/": "/movie/*",
+            "comment": "Matches all movie share links"
+          }
+        ]
+      }
+    ]
+  }
+}
