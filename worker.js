@@ -6,6 +6,10 @@ export default {
             return serveAASA();
         }
 
+        if (url.pathname === '/proxy') {
+            return proxyImage(url);
+        }
+
         return serveSharePage(url);
     }
 };
@@ -26,6 +30,25 @@ function serveAASA() {
     });
 }
 
+async function proxyImage(url) {
+    const imageUrl = url.searchParams.get('url');
+    if (!imageUrl) return new Response('missing url', { status: 400 });
+    try {
+        const response = await fetch(imageUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+        if (!response.ok) return new Response('upstream error', { status: 502 });
+        return new Response(response.body, {
+            headers: {
+                'Content-Type': response.headers.get('Content-Type') ?? 'image/jpeg',
+                'Cache-Control': 'public, max-age=86400',
+            }
+        });
+    } catch {
+        return new Response('fetch error', { status: 502 });
+    }
+}
+
 function serveSharePage(url) {
     const params = url.searchParams;
     const title = params.get('t') ?? 'A movie';
@@ -33,8 +56,11 @@ function serveSharePage(url) {
     const year = params.get('y');
     const genre = params.get('g');
 
-    const ogImage = posterPath
-        ? `https://image.tmdb.org/t/p/w500${posterPath}`
+    const rawImageUrl = posterPath
+        ? (posterPath.startsWith('http') ? posterPath : `https://image.tmdb.org/t/p/w500${posterPath}`)
+        : null;
+    const ogImage = rawImageUrl
+        ? `${url.origin}/proxy?url=${encodeURIComponent(rawImageUrl)}`
         : null;
 
     const metaDescription = [year, genre].filter(Boolean).join(' · ') || 'Add it to your watchlist.';
